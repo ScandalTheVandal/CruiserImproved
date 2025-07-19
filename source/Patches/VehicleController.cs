@@ -360,9 +360,12 @@ internal class VehicleControllerPatches
             }
         }
 
-        //Fix items dropping through the back of the cruiser
-        Transform itemDropCollider = __instance.physicsRegion.itemDropCollider.transform;
-        itemDropCollider.localScale = new Vector3(itemDropCollider.localScale.x, itemDropCollider.localScale.y, 5f);
+	if (PublicVehicleData.VehicleID == 0)
+	{
+            //Fix items dropping through the back of the cruiser
+            Transform itemDropCollider = __instance.physicsRegion.itemDropCollider.transform;
+            itemDropCollider.localScale = new Vector3(itemDropCollider.localScale.x, itemDropCollider.localScale.y, 5f);	
+	}
 
         if (NetworkSync.FinishedSync)
         {
