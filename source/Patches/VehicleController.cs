@@ -13,6 +13,11 @@ using UnityEngine.AI;
 
 namespace CruiserImproved.Patches;
 
+public class PublicVehicleData
+{
+    public static int VehicleID;
+}
+
 [HarmonyPatch(typeof(VehicleController))]
 internal class VehicleControllerPatches
 {
@@ -70,6 +75,14 @@ internal class VehicleControllerPatches
 
     public static Dictionary<VehicleController, VehicleControllerData> vehicleData = new();
 
+    [HarmonyPatch("Awake")]
+    [HarmonyPostfix]
+    static void Awake_IDCheck_Postfix(VehicleController __instance)
+    {
+        PublicVehicleData.VehicleID = __instance.vehicleID;
+        CruiserImproved.LogInfo($"Setting Vehicle ID on Awake: {PublicVehicleData.VehicleID}");
+    }
+
     private static void RemoveStaleVehicleData()
     {
         List<VehicleController> vehiclesToRemove = new();
@@ -92,8 +105,8 @@ internal class VehicleControllerPatches
         VehicleControllerData thisData = vehicleData[vehicle];
 
         //don't modify non-vanilla cruiser
-        if (vehicle.vehicleID != 0) return;
-
+        if (PublicVehicleData.VehicleID != 0) return;
+	    
         //Allow player to turn further backward for the lean mechanic
         if (NetworkSync.Config.AllowLean)
         {
@@ -902,6 +915,19 @@ internal class VehicleControllerPatches
             ]);
 
         return codes;
+    }
+
+    //Visual: Fix wheel meshes not using the rotation of the WheelCollider
+    [HarmonyPatch("MatchWheelMeshToCollider")]
+    [HarmonyPostfix]
+    private static void MatchWheelMeshToCollider_Postfix(VehicleController __instance, MeshRenderer wheelMesh, WheelCollider wheelCollider)
+    {
+        Vector3 position;
+        Quaternion rotation;
+        wheelCollider.GetWorldPose(out position, out rotation);
+
+        wheelMesh.transform.position = position;
+        wheelMesh.transform.rotation = rotation;
     }
 
     //Rpc Args: NetworkObjectReference cruiserRef, float angle
