@@ -6,8 +6,8 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System;
 using CruiserImproved.Utils;
-
 using Random = UnityEngine.Random;
+using System.Collections;
 
 namespace CruiserImproved.Patches;
 
