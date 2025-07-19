@@ -19,8 +19,8 @@ internal class StartOfRoundPatches
     private static IEnumerator SetItemPositionAfterDelay(int index, Vector3[] positionArray, int[] itemArray)
     {
         CruiserImproved.LogMessage($"Attempting to set item positions: {positionArray[index]}");
-        //wait two frames before setting item positions
-        yield return new WaitForSeconds(Time.deltaTime * 2);
+        //wait until the end of the frame before setting item positions
+        yield return new WaitForEndOfFrame();
         try
         {
             Item thisItem = StartOfRound.Instance.allItemsList.itemsList[itemArray[index]];
