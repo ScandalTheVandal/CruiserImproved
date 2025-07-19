@@ -1012,16 +1012,21 @@ internal class VehicleControllerPatches
     [HarmonyPostfix]
     static void BreakWindshield_Postfix(VehicleController __instance)
     {
-        __instance.lod1Mesh.sharedMaterial = __instance.mainBodyMesh.sharedMaterial;
-        __instance.lod2Mesh.sharedMaterial = __instance.mainBodyMesh.sharedMaterial;
+        Material[] bodyMaterials = __instance.mainBodyMesh.sharedMaterials;
+        bodyMaterials[2] = __instance.windshieldBrokenMat;
+        __instance.lod1Mesh.sharedMaterials = bodyMaterials;
+        __instance.lod2Mesh.sharedMaterials = bodyMaterials;
     }
 
     [HarmonyPatch("SetHeadlightMaterial")]
     [HarmonyPostfix]
     static void SetHeadlightMaterial_Postfix(VehicleController __instance, bool on)
     {
-        __instance.lod1Mesh.sharedMaterial = __instance.mainBodyMesh.sharedMaterial;
-        __instance.lod2Mesh.sharedMaterial = __instance.mainBodyMesh.sharedMaterial;
+        Material headlightMat = on ? __instance.headlightsOnMat : __instance.headlightsOffMat;
+        Material[] bodyMaterials = __instance.mainBodyMesh.sharedMaterials;
+        bodyMaterials[1] = headlightMat;
+        __instance.lod1Mesh.sharedMaterials = bodyMaterials;
+        __instance.lod2Mesh.sharedMaterials = bodyMaterials;
     }
 
     //Patch non-drivers ejecting drivers in the Cruiser
