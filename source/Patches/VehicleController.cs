@@ -1231,16 +1231,16 @@ internal class VehicleControllerPatches
             new(OpCodes.Call, fixMagnet),
             new(OpCodes.Stloc_1),
 
-            //return early if not owner
-            new(OpCodes.Ldarg_0),
-            new(OpCodes.Call, getIsOwner),
-            new(OpCodes.Brtrue, jumpLabel),
-            new(OpCodes.Ret),
-
             //return early if no localPlayerController yet to prevent a nullref when calling the rpc
             new(OpCodes.Call, PatchUtils.Method(typeof(GameNetworkManager), "get_Instance")),
             new(OpCodes.Ldfld, PatchUtils.Field(typeof(GameNetworkManager), "localPlayerController")),
             new(OpCodes.Call, typeof(UnityEngine.Object).GetMethod("op_Implicit")),
+            new(OpCodes.Brtrue, jumpLabel),
+            new(OpCodes.Ret),
+
+            //return early if not owner
+            new(OpCodes.Ldarg_0),
+            new(OpCodes.Call, getIsOwner),
             new(OpCodes.Brtrue, jumpLabel),
             new(OpCodes.Ret)
             ]);
