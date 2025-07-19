@@ -14,25 +14,37 @@ namespace CruiserImproved.Patches;
 [HarmonyPatch(typeof(StartOfRound))]
 internal class StartOfRoundPatches
 {
-    //injected sorting method
-    static void SetItemPosition(StartOfRound instance, int index, Vector3[] positionArray, int[] itemArray)
-    {
-        if (!UserConfig.SortEquipmentOnLoad.Value) return;
+    private static Coroutine setItemPositionCoroutine = null!;
 
-        //try catch block here in case code shuffles variables and this throws (if it throws it'll break the whole loading sequence)
+    private static IEnumerator SetItemPositionAfterDelay(int index, Vector3[] positionArray, int[] itemArray)
+    {
+        CruiserImproved.LogMessage($"Attempting to set item positions: {positionArray[index]}");
+        //wait two frames before setting item positions
+        yield return new WaitForSeconds(Time.deltaTime * 2);
         try
         {
-            Item thisItem = instance.allItemsList.itemsList[itemArray[index]];
+            Item thisItem = StartOfRound.Instance.allItemsList.itemsList[itemArray[index]];
             //move non-scrap and weapons toward the center of the ship slightly from the rest of the pile
             if (!thisItem.isScrap || thisItem.isDefensiveWeapon)
             {
                 positionArray[index].z += Random.Range(-2.5f, -1.5f);
             }
+            setItemPositionCoroutine = null!;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             CruiserImproved.LogError("Exception caught placing Cruiser items in ship:\n" + e);
+            setItemPositionCoroutine = null!;
         }
+    }
+
+    //injected sorting method
+    static void SetItemPosition(StartOfRound instance, int index, Vector3[] positionArray, int[] itemArray)
+    {
+        if (!UserConfig.SortEquipmentOnLoad.Value) return;
+
+        if (setItemPositionCoroutine == null)
+            setItemPositionCoroutine = instance.StartCoroutine(SetItemPositionAfterDelay(index, positionArray, itemArray));
     }
 
     [HarmonyPatch("LoadShipGrabbableItems")]
