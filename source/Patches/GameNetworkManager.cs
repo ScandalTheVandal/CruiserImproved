@@ -11,7 +11,7 @@ internal class GameNetworkManagerPatches
     [HarmonyPostfix]
     static void SaveItemsInShip_Postfix(GameNetworkManager __instance)
     {
-        //save cruiser data if we have one and it's vanilla
+        //save cruiser data, if we have one, and it's vanilla
         try
         {
             if (UserConfig.SaveCruiserValues.Value && StartOfRound.Instance.attachedVehicle && PublicVehicleData.VehicleID == 0)
