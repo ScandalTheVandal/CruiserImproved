@@ -393,6 +393,13 @@ internal class VehicleControllerPatches
         //CruiserImproved.Log.LogMessage("Anti-slip force magnitude " + force.magnitude);
 
         __instance.mainRigidbody.AddForce(force, ForceMode.Acceleration);
+
+	if (!__instance.magnetedToShip)
+        {
+            return;
+        }
+        __instance.syncedPosition = __instance.transform.position;
+        __instance.syncedRotation = __instance.transform.rotation;
     }
 
     [HarmonyPatch("Update")]
@@ -969,6 +976,23 @@ internal class VehicleControllerPatches
         codes.Insert(index, new(OpCodes.Br, jumpTo));
 
         return codes;
+    }
+
+    //Fix materials (broken windshield, headlight on/off) not being applied to LODs
+    [HarmonyPatch("BreakWindshield")]
+    [HarmonyPostfix]
+    static void BreakWindshield_Postfix(VehicleController __instance)
+    {
+        __instance.lod1Mesh.sharedMaterial = __instance.mainBodyMesh.sharedMaterial;
+        __instance.lod2Mesh.sharedMaterial = __instance.mainBodyMesh.sharedMaterial;
+    }
+
+    [HarmonyPatch("SetHeadlightMaterial")]
+    [HarmonyPostfix]
+    static void SetHeadlightMaterial_Postfix(VehicleController __instance, bool on)
+    {
+        __instance.lod1Mesh.sharedMaterial = __instance.mainBodyMesh.sharedMaterial;
+        __instance.lod2Mesh.sharedMaterial = __instance.mainBodyMesh.sharedMaterial;
     }
 
     //Patch non-drivers ejecting drivers in the Cruiser
