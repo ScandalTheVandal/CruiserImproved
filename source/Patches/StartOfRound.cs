@@ -22,7 +22,9 @@ internal class StartOfRoundPatches
         yield return null!;
         CruiserImproved.LogMessage($"Current frame: 2");
         yield return null!;
+        CruiserImproved.LogMessage($"Current frame: 3, waiting for end of frame");
         yield return new WaitForEndOfFrame();
+        CruiserImproved.LogMessage($"End of frame delay, attempting to set position of items");
         try
         {
             Item thisItem = StartOfRound.Instance.allItemsList.itemsList[itemArray[index]];
