@@ -360,6 +360,7 @@ internal class VehicleControllerPatches
             }
         }
 
+	//Don't modify non vanilla cruiser
 	if (PublicVehicleData.VehicleID == 0)
 	{
             //Fix items dropping through the back of the cruiser
