@@ -13,6 +13,11 @@ using UnityEngine.AI;
 
 namespace CruiserImproved.Patches;
 
+public class PublicVehicleData
+{
+    public static int VehicleID;
+}
+
 [HarmonyPatch(typeof(VehicleController))]
 internal class VehicleControllerPatches
 {
@@ -70,6 +75,14 @@ internal class VehicleControllerPatches
 
     public static Dictionary<VehicleController, VehicleControllerData> vehicleData = new();
 
+    [HarmonyPatch("Awake")]
+    [HarmonyPostfix]
+    static void Awake_IDCheck_Postfix(VehicleController __instance)
+    {
+        PublicVehicleData.VehicleID = __instance.vehicleID;
+        CruiserImproved.LogInfo($"Setting Vehicle ID on Awake: {PublicVehicleData.VehicleID}");
+    }
+
     private static void RemoveStaleVehicleData()
     {
         List<VehicleController> vehiclesToRemove = new();
@@ -92,8 +105,8 @@ internal class VehicleControllerPatches
         VehicleControllerData thisData = vehicleData[vehicle];
 
         //don't modify non-vanilla cruiser
-        if (vehicle.vehicleID != 0) return;
-
+        if (PublicVehicleData.VehicleID != 0) return;
+	    
         //Allow player to turn further backward for the lean mechanic
         if (NetworkSync.Config.AllowLean)
         {
@@ -347,9 +360,13 @@ internal class VehicleControllerPatches
             }
         }
 
-        //Fix items dropping through the back of the cruiser
-        Transform itemDropCollider = __instance.physicsRegion.itemDropCollider.transform;
-        itemDropCollider.localScale = new Vector3(itemDropCollider.localScale.x, itemDropCollider.localScale.y, 5f);
+	//Don't modify non vanilla cruiser
+	if (PublicVehicleData.VehicleID == 0)
+	{
+            //Fix items dropping through the back of the cruiser
+            Transform itemDropCollider = __instance.physicsRegion.itemDropCollider.transform;
+            itemDropCollider.localScale = new Vector3(itemDropCollider.localScale.x, itemDropCollider.localScale.y, 5f);	
+	}
 
         if (NetworkSync.FinishedSync)
         {
@@ -393,6 +410,13 @@ internal class VehicleControllerPatches
         //CruiserImproved.Log.LogMessage("Anti-slip force magnitude " + force.magnitude);
 
         __instance.mainRigidbody.AddForce(force, ForceMode.Acceleration);
+
+	if (!__instance.magnetedToShip)
+        {
+            return;
+        }
+        __instance.syncedPosition = __instance.transform.position;
+        __instance.syncedRotation = __instance.transform.rotation;
     }
 
     [HarmonyPatch("Update")]
@@ -897,6 +921,19 @@ internal class VehicleControllerPatches
         return codes;
     }
 
+    //Visual: Fix wheel meshes not using the rotation of the WheelCollider
+    [HarmonyPatch("MatchWheelMeshToCollider")]
+    [HarmonyPostfix]
+    private static void MatchWheelMeshToCollider_Postfix(VehicleController __instance, MeshRenderer wheelMesh, WheelCollider wheelCollider)
+    {
+        Vector3 position;
+        Quaternion rotation;
+        wheelCollider.GetWorldPose(out position, out rotation);
+
+        wheelMesh.transform.position = position;
+        wheelMesh.transform.rotation = rotation;
+    }
+
     //Rpc Args: NetworkObjectReference cruiserRef, float angle
     static public void SyncSteeringRpc(ulong clientId, FastBufferReader reader)
     {
@@ -969,6 +1006,28 @@ internal class VehicleControllerPatches
         codes.Insert(index, new(OpCodes.Br, jumpTo));
 
         return codes;
+    }
+
+    //Fix materials (broken windshield, headlight on/off) not being applied to LODs
+    [HarmonyPatch("BreakWindshield")]
+    [HarmonyPostfix]
+    static void BreakWindshield_Postfix(VehicleController __instance)
+    {
+        Material[] bodyMaterials = __instance.mainBodyMesh.sharedMaterials;
+        bodyMaterials[2] = __instance.windshieldBrokenMat;
+        __instance.lod1Mesh.sharedMaterials = bodyMaterials;
+        __instance.lod2Mesh.sharedMaterials = bodyMaterials;
+    }
+
+    [HarmonyPatch("SetHeadlightMaterial")]
+    [HarmonyPostfix]
+    static void SetHeadlightMaterial_Postfix(VehicleController __instance, bool on)
+    {
+        Material headlightMat = on ? __instance.headlightsOnMat : __instance.headlightsOffMat;
+        Material[] bodyMaterials = __instance.mainBodyMesh.sharedMaterials;
+        bodyMaterials[1] = headlightMat;
+        __instance.lod1Mesh.sharedMaterials = bodyMaterials;
+        __instance.lod2Mesh.sharedMaterials = bodyMaterials;
     }
 
     //Patch non-drivers ejecting drivers in the Cruiser
@@ -1173,16 +1232,16 @@ internal class VehicleControllerPatches
             new(OpCodes.Call, fixMagnet),
             new(OpCodes.Stloc_1),
 
-            //return early if not owner
-            new(OpCodes.Ldarg_0),
-            new(OpCodes.Call, getIsOwner),
-            new(OpCodes.Brtrue, jumpLabel),
-            new(OpCodes.Ret),
-
             //return early if no localPlayerController yet to prevent a nullref when calling the rpc
             new(OpCodes.Call, PatchUtils.Method(typeof(GameNetworkManager), "get_Instance")),
             new(OpCodes.Ldfld, PatchUtils.Field(typeof(GameNetworkManager), "localPlayerController")),
             new(OpCodes.Call, typeof(UnityEngine.Object).GetMethod("op_Implicit")),
+            new(OpCodes.Brtrue, jumpLabel),
+            new(OpCodes.Ret),
+
+            //return early if not owner
+            new(OpCodes.Ldarg_0),
+            new(OpCodes.Call, getIsOwner),
             new(OpCodes.Brtrue, jumpLabel),
             new(OpCodes.Ret)
             ]);
