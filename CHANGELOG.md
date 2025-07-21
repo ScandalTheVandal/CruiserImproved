@@ -11,8 +11,8 @@ Updated compatibility for v70+
 
 ### Compatibility  
 
-- \Consolidated VehicleID checks & added checks to vehicle collision trigger in order to prevent modifying LLL-Vehicles.
-- \CruiserImproved is no longer compatible with LCVR, however this will be investigated.
+- Consolidated VehicleID checks & added checks to vehicle collision trigger in order to prevent modifying LLL-Vehicles.
+- CruiserImproved is no longer compatible with LCVR, however this will be investigated.
 
 ## 1.5.0
 
