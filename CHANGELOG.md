@@ -4,7 +4,7 @@ Updated compatibility for v70+
 
 ### Bugfixes
 
-- \[Host] Tweaks sort equipment on load to run after a delay, to prevent items from floating out of bounds on reload [v70+]
+- \[Host] Tweaks sort equipment on load to run after a delay, to prevent items from floating out of bounds on reload [v70+] (thanks to [Buttery Stancakes](https://github.com/ButteryStancakes))
 - \[Client] Fixed issue with certain materials (broken windshield, headlamp on/off material) not being applied to lower-level-of-detail models.
 - \[Client] Fixed issues with wheels not using the rotation of the corresponding collider, resulting in gimbal lock and unnatural behaviour.
 - \[Client?/Host?] Moved a localPlayerController check on StartMagneting to before the isOwner check, should hopefully prevent a nullref error.
