@@ -1,3 +1,19 @@
+## 1.5.1
+
+Updated compatibility for v70+
+
+### Bugfixes
+
+- \[Host] Tweaks sort equipment on load to run after a delay, to prevent items from floating out of bounds on reload [v70+]
+- \[Client] Fixed issue with certain materials (broken windshield, headlamp on/off material) not being applied to lower-level-of-detail models.
+- \[Client] Fixed issues with wheels not using the rotation of the corresponding collider, resulting in gimbal lock and unnatural behaviour.
+- \[Client?/Host?] Moved a localPlayerController check on StartMagneting to before the isOwner check, should hopefully prevent a nullref error.
+
+### Compatibility  
+
+- \Consolidated VehicleID checks & added checks to vehicle collision trigger in order to prevent modifying LLL-Vehicles.
+- \CruiserImproved is no longer compatible with LCVR, however this will be investigated.
+
 ## 1.5.0
 
 Updated compatibility for v69.
