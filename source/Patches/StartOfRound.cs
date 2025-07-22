@@ -6,33 +6,49 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System;
 using CruiserImproved.Utils;
-
 using Random = UnityEngine.Random;
+using System.Collections;
 
 namespace CruiserImproved.Patches;
 
 [HarmonyPatch(typeof(StartOfRound))]
 internal class StartOfRoundPatches
 {
-    //injected sorting method
-    static void SetItemPosition(StartOfRound instance, int index, Vector3[] positionArray, int[] itemArray)
-    {
-        if (!UserConfig.SortEquipmentOnLoad.Value) return;
+    private static Coroutine setItemPositionCoroutine = null!;
 
-        //try catch block here in case code shuffles variables and this throws (if it throws it'll break the whole loading sequence)
+    private static IEnumerator SetItemPositionAfterDelay(int index, Vector3[] positionArray, int[] itemArray)
+    {
+        CruiserImproved.LogMessage($"Current frame: 1");
+        yield return null!;
+        CruiserImproved.LogMessage($"Current frame: 2");
+        yield return null!;
+        CruiserImproved.LogMessage($"Current frame: 3, waiting for end of frame");
+        yield return new WaitForEndOfFrame();
+        CruiserImproved.LogMessage($"End of frame delay, attempting to set position of items");
         try
         {
-            Item thisItem = instance.allItemsList.itemsList[itemArray[index]];
+            Item thisItem = StartOfRound.Instance.allItemsList.itemsList[itemArray[index]];
             //move non-scrap and weapons toward the center of the ship slightly from the rest of the pile
             if (!thisItem.isScrap || thisItem.isDefensiveWeapon)
             {
                 positionArray[index].z += Random.Range(-2.5f, -1.5f);
             }
+            setItemPositionCoroutine = null!;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             CruiserImproved.LogError("Exception caught placing Cruiser items in ship:\n" + e);
+            setItemPositionCoroutine = null!;
         }
+    }
+
+    //injected sorting method
+    static void SetItemPosition(StartOfRound instance, int index, Vector3[] positionArray, int[] itemArray)
+    {
+        if (!UserConfig.SortEquipmentOnLoad.Value) return;
+
+        if (setItemPositionCoroutine == null)
+            setItemPositionCoroutine = instance.StartCoroutine(SetItemPositionAfterDelay(index, positionArray, itemArray));
     }
 
     [HarmonyPatch("LoadShipGrabbableItems")]
@@ -86,7 +102,7 @@ internal class StartOfRoundPatches
     static void LoadAttachedVehicle_Postfix(StartOfRound __instance)
     {
         //Check for a saved vanilla Cruiser
-        if (!__instance.attachedVehicle || __instance.attachedVehicle.vehicleID != 0) return;
+        if (!__instance.attachedVehicle || PublicVehicleData.VehicleID != 0) return;
         try
         {
             var vehicle = __instance.attachedVehicle;
