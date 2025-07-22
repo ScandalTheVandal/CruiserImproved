@@ -665,6 +665,9 @@ internal class VehicleControllerPatches
     [HarmonyPostfix]
     static void DestroyCar_Postfix(VehicleController __instance)
     {
+	//don't modify non-vanilla cruiser
+        if (PublicVehicleData.VehicleID != 0) return;
+	    
         UpdateCruiserScanText(__instance, true);
 
         __instance.carExhaustParticle.Stop(true, ParticleSystemStopBehavior.StopEmitting);
