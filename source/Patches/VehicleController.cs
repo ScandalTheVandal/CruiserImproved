@@ -1037,6 +1037,7 @@ internal class VehicleControllerPatches
             return;
         }
 
+	// Play the skidding effects on clients sides
         float stressAmount = vehicleData[__instance].lastTyreStress;
         bool tyreStressing = vehicleData[__instance].lastTyreStressPlaying;
         bool tyreSparksActive = (tyreStressing && __instance.averageVelocity.magnitude > 8f);
