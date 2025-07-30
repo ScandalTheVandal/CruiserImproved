@@ -62,7 +62,7 @@ Feel free to post suggestions or issues to:
 - The mod's [thread](https://discord.com/channels/1168655651455639582/1258980772996448309) in the [LC Modding discord server](https://discord.gg/XeyYqRdRGC)
 
 ### Compatibility
-Compatible with Lethal Company v69.
+Compatible with Lethal Company v72.
 
 CruiserImproved should be compatible with most mods, but it works well with:
 - [BetterVehicleControls](https://thunderstore.io/c/lethal-company/p/Dev1A3/BetterVehicleControls/)
