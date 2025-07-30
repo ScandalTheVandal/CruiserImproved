@@ -38,6 +38,9 @@ internal class VehicleControllerPatches
 
         public bool usingColoredExhaust = false;
         public ParticleSystem particleSystemSwap;
+
+        public float lastTyreStress;
+        public bool lastTyreStressPlaying;
     }
 
     static readonly int CriticalThreshold = 2;
@@ -474,6 +477,15 @@ internal class VehicleControllerPatches
             bool enableObstacle = __instance.averageVelocity.magnitude < 0.5f && !__instance.currentDriver && !__instance.currentPassenger;
 
             extraData.navObstacle.gameObject.SetActive(enableObstacle);
+        }
+
+	if (__instance.IsOwner) return;
+        List<WheelCollider> wheels = [__instance.FrontLeftWheel, __instance.FrontRightWheel, __instance.BackLeftWheel, __instance.BackRightWheel];
+
+        foreach (WheelCollider wheel in wheels)
+        {
+            wheel.motorTorque = 0f;
+            wheel.brakeTorque = __instance.gear == CarGearShift.Park ? 2000f : 0f;
         }
     }
 
@@ -957,6 +969,28 @@ internal class VehicleControllerPatches
         vehicleData[vehicle].lastSteeringAngle = angle;
     }
 
+    static public void SyncTyreStressRpc(ulong clientId, FastBufferReader reader)
+    {
+        reader.ReadNetworkSerializable(out NetworkObjectReference cruiserRef);
+        reader.ReadValue(out float stress);
+        reader.ReadValue(out bool stressed);
+        if (!cruiserRef.TryGet(out NetworkObject cruiserNetObj)) return;
+        if (!cruiserNetObj.TryGetComponent(out VehicleController vehicle)) return;
+
+        if (NetworkManager.Singleton.IsHost)
+        {
+            FastBufferWriter bufferWriter = new(16, Unity.Collections.Allocator.Temp);
+
+            bufferWriter.WriteValue(cruiserRef);
+            bufferWriter.WriteValue(stress);
+            bufferWriter.WriteValue(stressed);
+            NetworkSync.SendToClients("SyncTyreStressRpc", ref bufferWriter);
+        }
+
+        vehicleData[vehicle].lastTyreStress = stress;
+        vehicleData[vehicle].lastTyreStressPlaying = stressed;
+    }
+
     [HarmonyPatch("SetCarEffects")]
     [HarmonyPrefix]
     static void SetCarEffects_Prefix(VehicleController __instance, ref float setSteering)
@@ -981,6 +1015,42 @@ internal class VehicleControllerPatches
             __instance.steeringInput = vehicleData[__instance].lastSteeringAngle;
         }
     }
+
+    [HarmonyPatch("SetCarEffects")]
+    [HarmonyPostfix]
+    static void SetCarEffects_Postfix(VehicleController __instance, float setSteering)
+    {
+        if (!NetworkSync.SyncedWithHost) return;
+
+        // Sync the tyre skidding effects 
+        if (__instance.IsOwner)
+        {
+            if ((Mathf.Abs(__instance.skiddingAudio.volume - vehicleData[__instance].lastTyreStress) > 0.02f) || (__instance.skiddingAudio.isPlaying != vehicleData[__instance].lastTyreStressPlaying))
+            {
+                FastBufferWriter bufferWriter = new(16, Unity.Collections.Allocator.Temp);
+
+                bufferWriter.WriteValue(new NetworkObjectReference(__instance.NetworkObject));
+                bufferWriter.WriteValue(__instance.skiddingAudio.volume);
+                bufferWriter.WriteValue(__instance.skiddingAudio.isPlaying);
+                NetworkSync.SendToHost("SyncTyreStressRpc", bufferWriter);
+            }
+            return;
+        }
+
+        float stressAmount = vehicleData[__instance].lastTyreStress;
+        bool tyreStressing = vehicleData[__instance].lastTyreStressPlaying;
+        bool tyreSparksActive = (tyreStressing && __instance.averageVelocity.magnitude > 8f);
+        __instance.SetVehicleAudioProperties(__instance.skiddingAudio, tyreStressing, 0f, stressAmount, 3f, true, 1f);
+
+        if (tyreSparksActive && !__instance.tireSparks.isPlaying)
+        {
+            __instance.tireSparks.Play(true);
+        }
+        else if (!tyreStressing && __instance.tireSparks.isPlaying)
+        {
+            __instance.tireSparks.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+    }	
 
     [HarmonyPatch("SetCarEffects")]
     [HarmonyTranspiler]
