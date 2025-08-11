@@ -39,7 +39,6 @@ internal class VehicleControllerPatches
         public bool usingColoredExhaust = false;
         public ParticleSystem particleSystemSwap;
 
-        public float timeSinceTyreSkidSync;
         public float lastTyreStress;
         public bool lastTyreStressPlaying;
     }
@@ -1026,9 +1025,8 @@ internal class VehicleControllerPatches
         // Sync the tyre skidding effects 
         if (__instance.IsOwner)
         {
-            if (((Time.realtimeSinceStartup - vehicleData[__instance].timeSinceTyreSkidSync) > 0.1f && __instance.skiddingAudio.volume != vehicleData[__instance].lastTyreStress) || (__instance.skiddingAudio.isPlaying != vehicleData[__instance].lastTyreStressPlaying))
+            if ((Mathf.Abs(__instance.skiddingAudio.volume - vehicleData[__instance].lastTyreStress) > 0.02f) || (__instance.skiddingAudio.isPlaying != vehicleData[__instance].lastTyreStressPlaying))
             {
-                vehicleData[__instance].timeSinceTyreSkidSync = Time.realtimeSinceStartup;
                 FastBufferWriter bufferWriter = new(16, Unity.Collections.Allocator.Temp);
 
                 bufferWriter.WriteValue(new NetworkObjectReference(__instance.NetworkObject));
