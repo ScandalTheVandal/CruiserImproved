@@ -1,3 +1,10 @@
+## 1.5.2
+
+### Bugfixes
+
+- \[Host&Client\] Fixed tyre skid/tyre spark effects not syncing across clients.
+- \[Client] Fixed an issue, again, with wheels not rotating on non-owners.
+
 ## 1.5.1
 
 Updated compatibility for v70+
